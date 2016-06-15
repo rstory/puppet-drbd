@@ -8,6 +8,7 @@ class drbd(
   $service_enable   = true,
   $version          = $::drbd::params::version,
   $package_name     = $::drbd::params::package_name,
+  $kmod_package_name = $::drbd::params::kmod_package_name,
   $manage_repo      = $::drbd::params::manage_repo,
   $protocol         = 'C',
 ) inherits ::drbd::params {
@@ -28,10 +29,21 @@ class drbd(
   }
   ensure_packages($package_name)
 
-  # ensure that the kernel module is loaded
-  exec { 'modprobe drbd':
-    path   => ['/bin/', '/sbin/'],
-    unless => 'grep -qe \'^drbd \' /proc/modules',
+  if $kmod_package_name {
+    ensure_packages($kmod_package_name)
+    # ensure that the kernel module is loaded
+    exec { 'modprobe drbd':
+      path   => ['/bin/', '/sbin/'],
+      unless => 'grep -qe \'^drbd \' /proc/modules',
+      require => Package[$kmod_package_package_name],
+    }
+  }
+  else {
+    # ensure that the kernel module is loaded
+    exec { 'modprobe drbd':
+      path   => ['/bin/', '/sbin/'],
+      unless => 'grep -qe \'^drbd \' /proc/modules',
+    }
   }
 
   File {
